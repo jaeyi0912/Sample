@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KDT 9-4Team | AI 모델 이미지 리포트 (v6)</title>
+<style>
+  :root{ --ink:#101316; --ink-dim:#495361; --on:#fff; --card:#fffefb; --grad1:#ff6a00; --grad2:#ff3470; --line:#00000012; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--on);
+    font-family:Inter,Pretendard,system-ui,-apple-system,Segoe UI,Roboto,Noto Sans KR,Arial,"Apple SD Gothic Neo","맑은 고딕",sans-serif;
+    background:
+      radial-gradient(1400px 800px at 20% -10%, rgba(255,255,255,.15), transparent 60%),
+      radial-gradient(1200px 700px at 120% 10%, rgba(255,255,255,.12), transparent 60%),
+      linear-gradient(135deg, var(--grad1) 0%, var(--grad2) 100%);
+    overflow-x:hidden;
+  }
+  a{color:inherit}
+  header.nav{position:fixed; top:0; left:0; right:0; height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 18px; z-index:100; background:linear-gradient(to bottom, rgba(0,0,0,.45), rgba(0,0,0,.05));}
+  header .brand{font-weight:900}
+  header .brand span{opacity:.9}
+  .container{width:min(1320px, 96vw); margin:0 auto; padding-top:86px; padding-bottom:56px;}
+  .hidden{display:none!important}
+
+  /* Buttons / Inputs */
+  .btn{display:inline-flex; align-items:center; gap:.4rem; padding:.74rem 1.05rem; border-radius:12px; border:1.5px solid rgba(255,255,255,.6); background:rgba(255,255,255,.08); color:#fff; text-decoration:none; font-weight:800; cursor:pointer; transition:.15s; backdrop-filter:blur(6px)}
+  .btn:hover{transform:translateY(-1px); background:rgba(255,255,255,.18)}
+  .input{width:100%; padding:14px 16px; border-radius:14px; border:1.5px solid rgba(255,255,255,.55); background:rgba(255,255,255,.08); color:#fff; outline:none; font-size:15px}
+  .input::placeholder{color:#ffffffbb}
+  .glass{background:var(--card); color:var(--ink); border-radius:28px; box-shadow:0 20px 80px rgba(0,0,0,.25)}
+  .hint{color:#ffffffd0; font-size:.95rem}
+
+  /* Screens */
+  .screen{min-height:calc(100dvh - 86px); display:flex; align-items:center; justify-content:center}
+  .login-card{width:min(560px, 92vw); padding:28px;}
+  .login-card label{font-size:.95rem; color:#111; font-weight:800}
+  .login-card .input{background:#fff; color:#111; border:1px solid #e8e8e8}
+  .login-card .input::placeholder{color:#9aa1a9}
+  .form-row{display:grid; gap:12px; margin-top:14px}
+
+  .search-wrap{width:min(880px, 92vw); gap:18px; display:flex; flex-direction:column; align-items:center}
+  .searchbar{display:flex; gap:10px; width:100%}
+  .searchbar input{flex:1; font-size:1.15rem}
+
+  /* Result layout */
+  .top-grid{display:grid; grid-template-columns: 1.15fr 1fr; gap:26px; align-items:stretch}
+  .photo{border-radius:28px; overflow:hidden; background:linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,.05)); border:1px solid rgba(255,255,255,.35); position:relative; min-height:440px}
+  .photo img{width:100%; height:100%; object-fit:cover; display:block}
+  .photo .fallback{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; opacity:.9}
+
+  .profile-card{
+  padding: 30px 32px;
+  min-height: 560px;          /* 카드 높이 기준 */
+  display: flex;
+  flex-direction: column;
+  }
+
+  .title{ font-size: 60px; font-weight: 900; letter-spacing:-0.01em; }
+  .badge{padding:.35rem .7rem; background:#111; color:#fff; border-radius:999px; font-size:.75rem; font-weight:900}
+  .subtitle{ font-size: 15px; line-height:1.55; color:var(--ink-dim); }
+  .divider{ height:1px; background:linear-gradient(90deg,#0000,#0002,#0000); margin:16px 0; }
+  .section-title{ font-size: 15px; letter-spacing:.14em; }
+  .kv{
+  display:grid;
+  grid-template-columns: 128px 1fr;
+  gap: 9px 16px;
+  line-height: 1.48;
+  }
+  .kv b{ color:#6b7683; font-weight:800; font-size:20px; }
+  .kv .val{
+    color:#101316; font-size:20px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+
+  .chips{display:flex; flex-wrap:wrap; gap:10px}
+  .chip { font-size: 13px; padding:.48rem .82rem; }
+  .chip::before{content:""; position:absolute; inset:0; border-radius:inherit; padding:2px; background:linear-gradient(135deg,#ff9a3c,#ff477e); -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude}
+
+  .section{margin-top:24px; padding:22px; border-radius:26px; background:var(--card); color:var(--ink); box-shadow:0 20px 80px rgba(0,0,0,.18)}
+  .section h3{margin:0 0 10px 0; font-size:20px}
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width: 980px){ .top-grid{grid-template-columns: 1fr} }
+  /* 기본 프로필(#kvs): 카드 높이의 최소 60% */
+  #kvs{ flex: 1 0 60%; margin-top: 6px; }
+
+  /* 수상·경력(#extra): 남은 공간의 30~40% (기본 35%) */
+  #extra{ flex: 1 0 35%; }
+
+  /* 수상/경력 서브 타이틀 & 리스트 */
+  .mini-title{ font-weight:900; font-size:14px; margin:4px 0 8px; color:#2a2f36; }
+  .kv-list{ margin:0; padding-left:16px; }
+  .kv-list li{ margin:4px 0; line-height:1.45; font-size:14.5px; color:#101316; }
+
+  /* 2열 간격 살짝 여유(네가 이미 .grid-2가 있으면 gap만 업데이트) */
+  .grid-2{ gap:12px 18px; }
+</style>
+</head>
+<body>
+  <header class="nav">
+    <div class="brand">KDT <span>9-4Team</span></div>
+    <a class="btn" href="#" onclick="goto('login');return false;">로그아웃</a>
+  </header>
+
+  <main class="container">
+    <!-- 1) LOGIN -->
+    <section id="screen-login" class="screen">
+      <div class="login-card glass">
+        <h2 style="margin:0 0 6px 0">AI 모델 이미지 리포트</h2>
+        <p class="hint">데모 로그인 후, 검색 화면으로 이동합니다.</p>
+        <form id="login-form">
+          <div class="form-row">
+            <div>
+              <label for="uid">아이디</label>
+              <input id="uid" class="input" placeholder="your@email.com" required />
+            </div>
+            <div>
+              <label for="pwd">비밀번호</label>
+              <input id="pwd" class="input" type="password" placeholder="••••••••" required />
+            </div>
+            <button class="btn" type="submit">접속하기</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 2) SEARCH -->
+    <section id="screen-search" class="screen hidden">
+      <div class="search-wrap">
+        <h1 style="margin:0; font-size:40px; font-weight:900">누구를 분석할까요?</h1>
+        <div class="searchbar">
+          <input id="q" class="input" placeholder="예) 박보검" />
+          <button class="btn" id="btn-search">검색</button>
+        </div>
+        <p class="hint">Wikipedia의 요약/대표이미지 → 인포박스(프로필) 순서로 빠르게 채웁니다.</p>
+      </div>
+    </section>
+
+    <!-- 3) RESULT (scroll page) -->
+    <section id="screen-result" class="hidden">
+      <div class="top-grid">
+        <div class="photo" id="photoBox">
+          <div class="fallback" id="photoFallback">검색 결과 없음</div>
+          <img id="photo" alt="portrait" decoding="async" loading="lazy" />
+        </div>
+        <article class="glass profile-card">
+          <!-- 헤더 -->
+          <div style="display:flex; justify-content:space-between; align-items:start; gap:8px">
+            <div>
+              <div id="title" class="title">—</div>
+              <div id="summary" class="subtitle">—</div>
+            </div>
+            <span class="badge" id="source-pill">—</span>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- 기본 프로필 (상단 60%) -->
+          <div class="section-title">기본 프로필</div>
+          <div id="kvs"></div>
+
+          <div class="divider"></div>
+
+          <!-- ✅ 추가: 수상/경력 (하단 30~40%) -->
+          <div id="extra" class="extra">
+            <div class="section-title">수상 · 경력</div>
+            <div class="grid-2">
+              <div>
+                <div class="mini-title">수상</div>
+                <ul id="awards" class="kv-list"></ul>
+              </div>
+              <div>
+                <div class="mini-title">경력</div>
+                <ul id="career" class="kv-list"></ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- 링크 -->
+          <div class="section-title">링크</div>
+          <div id="links" class="chips"></div>
+
+          <div style="margin-top:12px; display:flex; gap:10px">
+            <button class="btn" onclick="goto('search')">다시 검색</button>
+          </div>
+        </article>
+
+      <!-- 미래 확장 섹션들 -->
+      <section class="section" id="sec-expanded">
+        <h3>확장 정보</h3>
+        <div class="hint" style="color:#6a7584">(* 네이버/기타 소스 추가 예정 자리)</div>
+      </section>
+
+      <section class="section" id="sec-comments"><h3>댓글 분석</h3><div id="comments-root" class="grid-2"></div></section>
+      <section class="section" id="sec-news"><h3>뉴스 키워드 분석</h3><div id="news-root" class="grid-2"></div></section>
+      <section class="section" id="sec-incidents"><h3>사건·사고 요약</h3><div id="incidents-root" class="grid-2"></div></section>
+    </section>
+  </main>
+
+<script>
+/* ---------------------------- */
+/* SPA NAVIGATION               */
+/* ---------------------------- */
+function goto(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('screen-'+id).classList.remove('hidden');
+  if(id==='search'){ setTimeout(()=>document.getElementById('q').focus(), 50); }
+}
+document.getElementById('login-form').addEventListener('submit', e=>{ e.preventDefault(); goto('search'); });
+
+/* ---------------------------- */
+/* SEARCH WIRING                */
+/* ---------------------------- */
+const qEl = document.getElementById('q');
+document.getElementById('btn-search').addEventListener('click', doSearch);
+qEl.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); doSearch(); }});
+
+/* ---------------------------- */
+/* CACHING + TIMED FETCH        */
+/* ---------------------------- */
+const cache = new Map();
+function setCache(key, data){ cache.set(key, data); try{ sessionStorage.setItem(key, JSON.stringify(data)); }catch(e){} }
+function getCache(key){ if(cache.has(key)) return cache.get(key); try{ const v=sessionStorage.getItem(key); if(v){ const o=JSON.parse(v); cache.set(key,o); return o; } }catch(e){} return null; }
+async function timedFetch(url, opts={}, ms=3000){
+  const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(), ms);
+  try{ return await fetch(url, {...opts, signal:ctrl.signal}); } finally{ clearTimeout(t); }
+}
+
+/* ---------------------------- */
+/* WIKIPEDIA FETCH (FAST)       */
+/* ---------------------------- */
+async function fetchWikiSummary(name){
+  const url='https://ko.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(name);
+  const r=await timedFetch(url,{mode:'cors'},2500); if(!r.ok) throw new Error('summary fail'); return r.json();
+}
+async function fetchWikiParse(name){
+  const url='https://ko.wikipedia.org/w/api.php?action=parse&prop=text|images&format=json&origin=*&page='+encodeURIComponent(name);
+  const r=await timedFetch(url,{mode:'cors'},4000); if(!r.ok) throw new Error('parse fail'); return r.json();
+}
+function parseInfoboxHTML(html){
+  const kv=[]; let photo=''; if(!html) return {kv,photo};
+  const doc=new DOMParser().parseFromString(html,'text/html');
+  const ib=doc.querySelector('table.infobox'); if(!ib) return {kv,photo};
+  const img=ib.querySelector('img'); if(img && img.getAttribute('src')) photo=img.getAttribute('src');
+  const rows=ib.querySelectorAll('tr');
+  const order=['본명','출생','국적','직업','소속사','활동 기간','학력','종교','배우자','자녀','소속','웹사이트','수상'];
+  const tmp=[];
+  rows.forEach(tr=>{
+    const th=tr.querySelector('th'); const td=tr.querySelector('td');
+    if(!th||!td) return;
+    const key=normalizeKey(th.textContent.trim().replace(/\s+/g,' '));
+    const val=td.textContent.trim().replace(/\s+/g,' ');
+    if(val) tmp.push([key,val]);
+  });
+  order.forEach(k=>{ const it=tmp.find(([kk])=>kk===k); if(it) kv.push(it); });
+  tmp.forEach(([k,v])=>{ if(!kv.find(([kk])=>kk===k) && kv.length<14) kv.push([k,v]); });
+  return {kv,photo};
+}
+function normalizeKey(k){ k=k.replace(/\(.+?\)/g,'').trim(); const m={'출생지':'출생','태어난 곳':'출생','활동기간':'활동 기간','소속그룹':'소속','사이트':'웹사이트'}; return m[k]||k; }
+
+/* ---------------------------- */
+/* SEARCH PIPELINE              */
+/* ---------------------------- */
+async function doSearch(){
+  const name=(qEl.value||'').trim();
+  if(!name){ alert('이름을 입력하세요'); return; }
+
+  goto('result'); // 화면 전환
+
+  // 캐시 즉시 렌더
+  const key='profile:'+name;
+  const cached=getCache(key);
+  if(cached) renderAll(cached);
+
+  // 1) 요약 먼저
+  try{
+    const s=await fetchWikiSummary(name);
+    const base={
+      name: s.title||name,
+      summary: s.extract||'',
+      photo: (s.originalimage?.source || s.thumbnail?.source || '').replace(/^\/\//,'https://'),
+      links: [['위키백과', s.content_urls?.desktop?.page || ('https://ko.wikipedia.org/wiki/'+encodeURIComponent(name))]],
+      source:'WIKIPEDIA', kv:[]
+    };
+    renderSummary(base);
+    setCache(key,{...cached,...base});
+  }catch(e){ console.warn(e); showPhotoFallback('요약을 불러오지 못했습니다'); }
+
+  // 2) 인포박스(프로필/더 좋은 사진)
+  try{
+    const p=await fetchWikiParse(name);
+    const html=p?.parse?.text?.['*']||'';
+    const info=parseInfoboxHTML(html);
+    if(info.photo && info.photo.startsWith('//')) info.photo='https:'+info.photo;
+    const upd={kv:info.kv, photo: info.photo || getCache(key)?.photo};
+    renderInfobox(upd);
+    setCache(key,{...getCache(key), ...upd});
+  }catch(e){ console.warn(e); }
+
+  // ✅ 3) 네이버에서 수상/경력 보강 (이 부분 추가!)
+  try{
+    const blocks = await fetchNaverBlocks(name);
+    renderExtra(blocks);
+  }catch(e){
+    console.warn('naver parse fail', e);
+    renderExtra({awards:[], career:[]});
+  }
+}
+
+function showPhotoFallback(text){
+  const fb=document.getElementById('photoFallback');
+  fb.textContent=text;
+  fb.classList.remove('hidden');
+}
+
+/* ---------------------------- */
+/* RENDERERS                    */
+/* ---------------------------- */
+function renderAll(d){ renderSummary(d); renderInfobox(d); }
+function renderSummary(d){
+  document.getElementById('title').textContent=d.name||'';
+  document.getElementById('summary').textContent=d.summary||'';
+  document.getElementById('source-pill').textContent=d.source||'WIKI';
+
+  const img=document.getElementById('photo'); const fb=document.getElementById('photoFallback');
+  if(d.photo){
+    img.src=d.photo;
+    img.onload=()=>fb.classList.add('hidden');
+    img.onerror=()=>showPhotoFallback('이미지 오류');
+  }else{
+    showPhotoFallback('이미지 없음');
+  }
+
+  const links=document.getElementById('links'); links.innerHTML='';
+  (d.links||[]).forEach(([label,href])=>{
+    const a=document.createElement('a'); a.className='chip'; a.href=href; a.target='_blank'; a.rel='noopener'; a.textContent=label; links.appendChild(a);
+  });
+}
+function tidyValue(key, val){
+  if(key==='출생'){
+    // "1993년 6월 16일 (1993-06-16)(32세) 대한민국…" → "1993년 6월 16일 · 32세 · 서울특별시…"
+    val = val.replace(/\((\d{4}-\d{2}-\d{2})\)/g,'')   // ISO 괄호 제거
+             .replace(/\)\(/g, ') (')                 // 혹시 모를 붙음 정리
+             .replace(/\s{2,}/g,' ')
+             .replace(/(\d{1,2}세)/, '· $1 ·');
+  }
+  if(key==='웹사이트'){ val = val.replace(/유튜브|인스타/gi, m=>'· '+m); }
+  return val.trim();
+}
+
+function renderInfobox(d){
+  const kvs=document.getElementById('kvs');
+  if(d.kv && d.kv.length){
+    kvs.innerHTML='';
+    d.kv.forEach(([k,v])=>{
+      const row=document.createElement('div'); row.className='kv';
+      row.innerHTML=`<b>${escapeHtml(k)}</b><div class="val">${escapeHtml(v)}</div>`;
+      kvs.appendChild(row);
+    });
+  }
+  if(d.photo){
+    const current=document.getElementById('photo').src;
+    if(!current || current!==d.photo){
+      const fb=document.getElementById('photoFallback');
+      const tmp=new Image();
+      tmp.onload=()=>{ document.getElementById('photo').src=d.photo; fb.classList.add('hidden'); };
+      tmp.onerror=()=>{}; tmp.src=d.photo;
+    }
+  }
+}
+function escapeHtml(s){ return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+/* ---------------------------- */
+/* NAVER AWARDS/CAREER (via CORS proxy) */
+/* ---------------------------- */
+const NAVER_PROXY = 'https://r.jina.ai/http://search.naver.com/search.naver?query=';
+
+async function fetchNaverBlocks(name){
+  const url = NAVER_PROXY + encodeURIComponent(name);
+  const r = await timedFetch(url, {mode:'cors'}, 4500);
+  if(!r.ok) throw new Error('naver fetch fail');
+  const html = await r.text();
+
+  // DOM으로 파싱 (프록시가 원문 HTML을 텍스트화해도 대부분 동작)
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  // 네이버 인물 패널 내 하이라이트 그룹
+  let groups = [...doc.querySelectorAll('.info_group.type_highlight')];
+  const awards=[], career=[];
+
+  if(groups.length){
+    groups.forEach(g=>{
+      const dt = (g.querySelector('dt')?.textContent||'').trim();
+      const items = [...g.querySelectorAll('dd')].map(dd=>dd.textContent.trim()).filter(Boolean);
+      if(dt.includes('수상')) awards.push(...items);
+      if(dt.includes('경력')) career.push(...items);
+    });
+  }else{
+    // fallback: 텍스트 기반 간이 추출
+    const text = html.replace(/\r/g,'').split('\n').map(s=>s.trim()).filter(Boolean);
+    extractByHeading(text, '수상').forEach(v=>awards.push(v));
+    extractByHeading(text, '경력').forEach(v=>career.push(v));
+  }
+  return {awards, career};
+}
+
+function extractByHeading(lines, heading){
+  const out=[]; let on=false; let cap=0;
+  for(const t of lines){
+    if(t.includes(heading)){ on=true; continue; }
+    if(on){
+      if(/홍보대사|상$|^\d{4}|~|회/.test(t)){ out.push(t); cap++; if(cap>=12) break; }
+      else if(/^(출생|작품|필모|가족|학력|프로필|링크)/.test(t)){ break; }
+    }
+  }
+  return out;
+}
+
+function renderExtra({awards=[], career=[]}){
+  const aEl = document.getElementById('awards');
+  const cEl = document.getElementById('career');
+  if(aEl) aEl.innerHTML = (awards.slice(0,10).map(li=>`<li>${escapeHtml(li)}</li>`).join('')) || '<li>—</li>';
+  if(cEl) cEl.innerHTML = (career.slice(0,10).map(li=>`<li>${escapeHtml(li)}</li>`).join('')) || '<li>—</li>';
+}
+
+
+/* ---------------------------- */
+/* INJECTION HOOKS (아래 섹션)   */
+/* ---------------------------- */
+window.injectComments = html => { document.getElementById('comments-root').innerHTML = html; };
+window.injectNews = html => { document.getElementById('news-root').innerHTML = html; };
+window.injectIncidents = html => { document.getElementById('incidents-root').innerHTML = html; };
+
+/* 딥링크 ?q=이름 */
+const params=new URLSearchParams(location.search);
+if(params.get('q')){ goto('search'); qEl.value=params.get('q'); doSearch(); }
+</script>
+</body>
+</html>
